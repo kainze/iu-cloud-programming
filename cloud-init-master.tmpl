@@ -1,0 +1,30 @@
+packages:
+  - curl
+users:
+  - name: cluster
+    ssh-authorized-keys:
+      - ${pc_public_key}
+      - ${worker_public_key}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+
+write_files:
+  - path: /etc/rancher/k3s/config.yaml
+    owner: root:root
+    permissions: "0644"
+    content: |
+      node-ip: 10.0.1.1
+      advertise-address: 10.0.1.1
+      tls-san:
+        - 10.0.1.1
+      kubelet-arg:
+        - cloud-provider=external
+      disable:
+        - traefik
+        - cloud-controller
+
+runcmd:
+  - apt-get update -y
+  - curl https://get.k3s.io | sh -
+  - chown cluster:cluster /etc/rancher/k3s/k3s.yaml
+  - chown cluster:cluster /var/lib/rancher/k3s/server/node-token
