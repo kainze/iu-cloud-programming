@@ -1,3 +1,4 @@
+#cloud-config
 packages:
   - curl
 users:
@@ -7,16 +8,11 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
 
-write_files:
-  - path: /root/.ssh/id_rsa
-    content: ${ssh_worker_private_key_path}
-    permissions: "0600"
-
 runcmd:
   - apt-get update -y
-  - # wait for the master node to be ready by trying to connect to it
+  
+  # Wait for the master node's K3s API to be reachable
   - until curl -k https://10.0.1.1:6443; do sleep 5; done
-  - # copy the token from the master node
-  - REMOTE_TOKEN=$(ssh -o StrictHostKeyChecking=accept-new cluster@10.0.1.1 sudo cat /var/lib/rancher/k3s/server/node-token)
-  - # Install k3s worker
-  - curl -sfL https://get.k3s.io | K3S_URL=https://10.0.1.1:6443 K3S_TOKEN=$REMOTE_TOKEN INSTALL_K3S_EXEC="--kubelet-arg cloud-provider=external" sh -
+  
+  # Install k3s worker
+  - curl -sfL https://get.k3s.io | K3S_URL=https://10.0.1.1:6443 K3S_TOKEN=${k3s_token} INSTALL_K3S_EXEC="--kubelet-arg cloud-provider=external --node-ip=${worker_private_ip}" sh -

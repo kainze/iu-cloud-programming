@@ -37,7 +37,7 @@ variable "worker_count" {
 variable "ssh_public_key_path" {
   description = "Path to your local public SSH key"
   type        = string
-  default     = "~/.ssh/id_ed25519.pub"
+  default     = "~/.ssh/id_ed25519_hetzner.pub"
 }
 
 variable "my_public_key" {

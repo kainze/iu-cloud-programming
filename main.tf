@@ -51,6 +51,7 @@ resource "hcloud_server" "master-node" {
   user_data = templatefile("${path.module}/cloud-init-master.tmpl", {
     pc_public_key     = trimspace(file(var.ssh_public_key_path))
     worker_public_key = trimspace(file(var.ssh_worker_public_key_path))
+    k3s_token          = var.k3s_token
   })
   depends_on = [hcloud_network_subnet.private_network_subnet]
 }
@@ -69,10 +70,13 @@ resource "hcloud_server" "worker-nodes" {
   }
   network {
     network_id = hcloud_network.private_network.id
+    ip         = "10.0.1.${count.index + 2}"
   }
   user_data = templatefile("${path.module}/cloud-init-worker.tmpl", {
     pc_public_key      = trimspace(file(var.ssh_public_key_path))
     worker_private_key = indent(6, file(var.ssh_worker_private_key_path))
+    k3s_token          = var.k3s_token
+    worker_private_ip  = "10.0.1.${count.index + 2}"
   })
 
   depends_on = [hcloud_network_subnet.private_network_subnet, hcloud_server.master-node]
