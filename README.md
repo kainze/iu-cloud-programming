@@ -42,11 +42,6 @@ Dieser Key wird verwendet, um dich selbst per SSH auf die Server einzuloggen.
 ssh-keygen -t ed25519 -C "user@hostname.de" -f ~/.ssh/id_ed25519_hetzner
 ```
 
-Da die Worker über SSH auf den Master zugreifen, wird ein separater Key-Paar benötigt, das im Terraform-Setup verwendet wird:
-```bash
-ssh-keygen -t ed25519 -C "k3s_worker" -f ~/.ssh/id_ed25519_k8s_worker
-```
-
 ### ⚙️ Terraform initialisieren & ausführen
 
 Nachdem alle Variablen in `terraform.tfvars` gesetzt sind und die SSH-Keys erstellt wurden, kann das Projekt provisioniert werden.
@@ -65,17 +60,20 @@ terraform destroy
 ```
 
 Hint: If you redeploy the server you have to remove the fingerprint of the server
-
 ```bash
 ssh-keygen -R <IP-AdressoftheServer>
 ```
 
 ### Check Kubernetes
 - Get the IP Adress from Hetzner
-- 
-
-
-
+- ssh into it
+```bash
+ssh root@<IP-AdressoftheServer>
+```
+- check i k3s is running
+```bash
+kubectl get nodes
+```
 
 
 

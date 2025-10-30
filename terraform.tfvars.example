@@ -1,3 +1,2 @@
 hcloud_token  = "INSERTTOKEN"
 k3s_token     = "INSERTTOKEN"
-my_public_key = "ssh-rsa INSERTKEY user@hostname"

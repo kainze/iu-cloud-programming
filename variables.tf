@@ -39,20 +39,3 @@ variable "ssh_public_key_path" {
   type        = string
   default     = "~/.ssh/id_ed25519_hetzner.pub"
 }
-
-variable "my_public_key" {
-  description = "my ssh public key"
-  type        = string
-  sensitive   = true
-}
-variable "ssh_worker_public_key_path" {
-  description = "Path to worker public key"
-  type        = string
-  default     = "~/.ssh/id_ed25519_k8s_worker.pub"
-}
-
-variable "ssh_worker_private_key_path" {
-  description = "Path to worker private key"
-  type        = string
-  default     = "~/.ssh/id_ed25519_k8s_worker"
-}

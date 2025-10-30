@@ -3,9 +3,6 @@ packages:
   - curl
 users:
   - name: cluster
-    ssh-authorized-keys:
-      - ${pc_public_key}
-      - ${worker_public_key}
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
 
