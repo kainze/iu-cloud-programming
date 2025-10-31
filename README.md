@@ -2,24 +2,21 @@
 
 This project automatically deploys a complete K3s cluster (1 Master, N Workers) on Hetzner Cloud using **Terraform**.
 
-It includes essential configuration to ensure **reliable token synchronization** and **private IP usage**—critical for stable cluster operation in dual-homed (Public/Private IP) cloud environments.
-
 ***
 
 ## 🧩 Prerequisites
 
 * Account at [Hetzner Cloud](https://console.hetzner.cloud)
 * Tools locally installed:
-    * [Terraform](https://developer.hashicorp.com/terraform/downloads)
-    * [kubectl](https://kubernetes.io/docs/tasks/tools/)
     * [git](https://git-scm.com/)
-* SSH key pair generated (e.g., `~/.ssh/id_ed25519_hetzner.pub`), which is necessary for Terraform to provision access.
+    * [Terraform](https://developer.hashicorp.com/terraform/downloads)
+    * [kubectl](https://kubernetes.io/docs/tasks/tools/) (Optional)
 
 ***
 
 ## 🚀 Setup & Deployment Guide
 
-### 1. Repository Clone and Setup
+### Repository Clone and Setup
 ```bash
 git clone [https://github.com/kainze/iu-cloud-programming.git](https://github.com/kainze/iu-cloud-programming.git)
 cd iu-cloud-programming
@@ -29,12 +26,12 @@ cd iu-cloud-programming
 cp terraform.tfvars.example terraform.tfvars
 ```
 ### 🔐 Edit Secrets (terraform.tfvars)
-- hccloud_token: -> Create Project at Hetzner and Get Api Token from -> Security -> Api Tokens (Must have Read & Write permissions.)
-- k3s_token: Ein zufälliger String als Shared Token für Master & Worker (z. B. openssl rand -hex 16)
+- hcloud_token: -> Create Project at Hetzner and Get Api Token from -> Security -> Api Tokens (Must have Read & Write permissions.)
+- k3s_token: The shared token for the K3s cluster (Master & Workers). Recommended to generate a secure random string: openssl rand -hex 32
 
 ### 🔑 SSH Keys erstellen
 
-Use this to generate the key to log in to the servers via SSH.
+Use this to generate the SSH key to log in to the servers via SSH.
 
 ```bash
 ssh-keygen -t ed25519 -C "user@hostname.de" -f ~/.ssh/id_ed25519_hetzner
@@ -69,6 +66,9 @@ ssh root@<MASTER_PUBLIC_IP>
 ```bash
 kubectl get nodes
 ```
+
+Expected Result:
+The output must show all nodes with a Ready status:
 
 ### 🧹 Cleanup
 
