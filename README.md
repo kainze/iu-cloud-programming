@@ -1,78 +1,86 @@
-# IU Cloud Programming – K3s Cluster auf Hetzner Cloud
+# ☁️ IU Cloud Programming – K3s Cluster on Hetzner Cloud
 
-Dieses Projekt deployt automatisiert einen vollständigen K3s-Cluster (1 Master, n Worker) auf der Hetzner Cloud mittels **Terraform**.  
-Zusätzlich wird der **Hetzner Cloud Controller Manager (CCM)**, **NGINX Ingress Controller** und optional **cert-manager** bereitgestellt.
+This project automatically deploys a complete K3s cluster (1 Master, N Workers) on Hetzner Cloud using **Terraform**.
 
----
+It includes essential configuration to ensure **reliable token synchronization** and **private IP usage**—critical for stable cluster operation in dual-homed (Public/Private IP) cloud environments.
 
-## 🧩 Voraussetzungen
+***
 
-- Account bei [Hetzner Cloud](https://console.hetzner.cloud)
-- Tools lokal installiert:
-  - [Terraform](https://developer.hashicorp.com/terraform/downloads)
-  - [kubectl](https://kubernetes.io/docs/tasks/tools/)
-  - [git](https://git-scm.com/)
-- SSH-Schlüssel vorhanden (z. B. `~/.ssh/id_ed25519.pub`)
-- Optional: Domain/Subdomain für TLS (z. B. `cloudprogramming.kainzmaier.de`)
+## 🧩 Prerequisites
 
+* Account at [Hetzner Cloud](https://console.hetzner.cloud)
+* Tools locally installed:
+    * [Terraform](https://developer.hashicorp.com/terraform/downloads)
+    * [kubectl](https://kubernetes.io/docs/tasks/tools/)
+    * [git](https://git-scm.com/)
+* SSH key pair generated (e.g., `~/.ssh/id_ed25519_hetzner.pub`), which is necessary for Terraform to provision access.
 
-## 🚀 Anleitung (Setup & Deployment)
+***
 
-### 1. Repository klonen
+## 🚀 Setup & Deployment Guide
+
+### 1. Repository Clone and Setup
 ```bash
-git clone https://github.com/kainze/iu-cloud-programming.git
+git clone [https://github.com/kainze/iu-cloud-programming.git](https://github.com/kainze/iu-cloud-programming.git)
 cd iu-cloud-programming
 ```
-
-
-### Secrets eintragen
+### Create the secrets file
 ```bash
 cp terraform.tfvars.example terraform.tfvars
 ```
-
-- hccloud_token: -> Create Project at Hetzner and Get Api Token from -> Security -> Api Tokens
+### 🔐 Edit Secrets (terraform.tfvars)
+- hccloud_token: -> Create Project at Hetzner and Get Api Token from -> Security -> Api Tokens (Must have Read & Write permissions.)
 - k3s_token: Ein zufälliger String als Shared Token für Master & Worker (z. B. openssl rand -hex 16)
-- my_public_key: Dein öffentlichen SSH-Key (z. B. ~/.ssh/id_ed25519.pub)
 
 ### 🔑 SSH Keys erstellen
 
-Dieser Key wird verwendet, um dich selbst per SSH auf die Server einzuloggen.
+Use this to generate the key to log in to the servers via SSH.
 
 ```bash
 ssh-keygen -t ed25519 -C "user@hostname.de" -f ~/.ssh/id_ed25519_hetzner
 ```
 
-### ⚙️ Terraform initialisieren & ausführen
+## ⚙️ Deployment & Kubernetes Verification
 
-Nachdem alle Variablen in `terraform.tfvars` gesetzt sind und die SSH-Keys erstellt wurden, kann das Projekt provisioniert werden.
+### Initialize and Apply Terraform
 
-#### 1️⃣ Terraform initialisieren
+Run the following commands to provision all Hetzner resources (network, servers) and execute the cloud-init scripts:
 
 ```bash
 terraform init
 terraform plan
+# CAUTION: The 'apply' phase creates paid resources immediately.
 terraform apply
 ```
 
-Later we want to Destroy it again so we have no costs. 
+### ✅ Check Kubernetes Cluster Status
+
+The cluster configuration is complete only after the worker nodes successfully join the master. Wait about 1 minute after terraform apply finishes for the agent services to start and join.
+
+- SSH into the Master Node:
+
+```bash
+# Replace <MASTER_PUBLIC_IP> with the public IP address of the Master Node you get that from the Cloud Console
+ssh root@<MASTER_PUBLIC_IP>
+```
+
+- Check Node Status: Run this command on the master to see the entire cluster state. Wait until both the master and all workers show Ready.
+
+```bash
+kubectl get nodes
+```
+
+### 🧹 Cleanup
+
+To delete all resources created on Hetzner Cloud and stop incurring costs:
+
 ```bash
 terraform destroy
 ```
 
-Hint: If you redeploy the server you have to remove the fingerprint of the server
+HINT: If you rebuild the servers (terraform apply after a destroy), your local SSH client may reject the connection due to an outdated fingerprint. If this happens, remove the old fingerprint: 
 ```bash
 ssh-keygen -R <IP-AdressoftheServer>
-```
-
-### Check Kubernetes
-- Get the IP Adress from Hetzner
-- ssh into it
-```bash
-ssh root@<IP-AdressoftheServer>
-```
-- check i k3s is running
-```bash
-kubectl get nodes
 ```
 
 
