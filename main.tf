@@ -33,6 +33,46 @@ resource "hcloud_ssh_key" "me" {
   public_key = file(var.ssh_public_key_path)
 }
 
+resource "hcloud_load_balancer" "ingress_lb" {
+  name = "k8s-ingress-lb"
+  load_balancer_type = "lb11"
+  location           = var.location
+}
+
+resource "hcloud_load_balancer_service" "http_service" {
+  load_balancer_id = hcloud_load_balancer.ingress_lb.id
+  protocol         = "tcp"
+  listen_port      = 80
+  destination_port = 80
+}
+
+resource "hcloud_load_balancer_service" "https_service" {
+  load_balancer_id = hcloud_load_balancer.ingress_lb.id
+  protocol         = "tcp"
+  listen_port      = 443
+  destination_port = 443 
+}
+
+# Resource: Load Balancer Targets (Attach Workers to the Load Balancer)
+resource "hcloud_load_balancer_target" "worker_targets" {
+  count            = var.worker_count
+  load_balancer_id = hcloud_load_balancer.ingress_lb.id
+  type             = "server"
+  server_id        = hcloud_server.worker-nodes[count.index].id
+  use_private_ip   = true
+}
+
+# Resource: Load Balancer Network Attachment (NEW)
+resource "hcloud_load_balancer_network" "lb_private_network" {
+  load_balancer_id = hcloud_load_balancer.ingress_lb.id
+  network_id       = hcloud_network.private_network.id
+  ip               = "10.0.1.254" 
+}
+
+output "ingress_ip" {
+  value = hcloud_load_balancer.ingress_lb.ipv4
+}
+
 # Master
 resource "hcloud_server" "master-node" {
   name        = "master-node"
