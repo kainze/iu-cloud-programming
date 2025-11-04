@@ -1,4 +1,5 @@
 #cloud-config
+package_update: true
 packages:
   - curl
 users:
@@ -15,6 +16,8 @@ write_files:
       advertise-address: 10.0.1.1
       tls-san:
         - 10.0.1.1
+        - 127.0.0.1
+        - $(curl -s http://checkip.amazonaws.com)
       kubelet-arg:
         - cloud-provider=external
       disable:
@@ -23,7 +26,7 @@ write_files:
 
 runcmd:
   - apt-get update -y
-  - curl -sfL https://get.k3s.io | K3S_TOKEN=${k3s_token} sh -s - server --node-ip=10.0.1.1 --bind-address=10.0.1.1 --disable traefik --disable-cloud-controller --kubelet-arg cloud-provider=external
+  - curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --disable traefik --tls-san 10.0.1.1 --tls-san $(curl -s http://checkip.amazonaws.com) --disable-cloud-controller --kubelet-arg cloud-provider=external --config /etc/rancher/k3s/config.yaml" K3S_TOKEN=${k3s_token} sh -
   - chown cluster:cluster /etc/rancher/k3s/k3s.yaml
   - chown cluster:cluster /var/lib/rancher/k3s/server/node-token
 

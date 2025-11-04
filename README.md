@@ -50,6 +50,9 @@ terraform plan
 terraform apply
 ```
 
+Copy the network ID from the output and save it for later.
+
+
 ### ✅ Check Kubernetes Cluster Status
 
 The cluster configuration is complete only after the worker nodes successfully join the master. Wait about 1 minute after terraform apply finishes for the agent services to start and join.
@@ -70,9 +73,65 @@ kubectl get nodes
 Expected Result:
 The output must show all nodes with a Ready status:
 
+
+## Create an example deployment
+### Nginx Ingress Controller 
+
+```bash
+wget -q https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.0/deploy/static/provider/cloud/deploy.yaml -O /tmp/nginx.yaml
+
+sed -i -e "s/kind: Deployment/kind: DaemonSet/g" /tmp/nginx.yaml
+sed -i -e "s/data: null/data:/g" /tmp/nginx.yaml
+sed -i -e '/^kind: ConfigMap.*/i  \ \ compute-full-forwarded-for: \"true\"\n \ use-forwarded-headers: \"true\"\n \ use-proxy-protocol: \"true\"\n \ keep-alive: \"off\"' /tmp/nginx.yaml
+sed -i -e "s/strategy:/updateStrategy:/g" /tmp/nginx.yaml
+
+
+kubectl apply -f /tmp/nginx.yaml
+```
+
+Replace <your_api_token> with your own Hetzner API token, and <network_id> with the network ID you got from the output terraform apply.
+
+```bash
+kubectl -n kube-system apply -f https://github.com/hetznercloud/hcloud-cloud-controller-manager/releases/download/v1.26.0/ccm-networks.yaml
+kubectl -n kube-system create secret generic hcloud \
+  --from-literal=token=<your_api_token> \
+  --from-literal=network=<network_id>
+```
+
+Check if the nodes have the correct Provider
+
+```bash
+kubectl describe node master-node | grep "ProviderID"
+kubectl describe node worker-node-0 | grep "ProviderID"
+```
+
+The output should be hcloud://<id>
+
+Now copy/create the file whoami.yaml on the master node:
+```bash
+nano whoami.yaml
+```
+
+Next, apply the file, If you have a public domain and a SSL certificate, upload or create the SSL certificate in Hetzner Console and change some lines below in the whoami.yaml
+```bash
+kubectl apply -f whoami.yaml
+```
+
+View the pods and the deployment.
+```bash
+kubectl -n ingress-nginx get pods
+kubectl -n ingress-nginx get deployments
+kubectl -n ingress-nginx get svc
+```
+
 ### 🧹 Cleanup
 
 To delete all resources created on Hetzner Cloud and stop incurring costs:
+```bash
+kubectl -n ingress-nginx delete deployment whoami
+kubectl -n ingress-nginx delete service whoami
+```
+
 
 ```bash
 terraform destroy
