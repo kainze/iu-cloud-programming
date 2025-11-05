@@ -28,7 +28,7 @@ metadata:
     load-balancer.hetzner.cloud/name: "kubernetes-load-balancer"
     load-balancer.hetzner.cloud/location: "fsn1"
     load-balancer.hetzner.cloud/use-private-ip: "true"
-    # If you don't have a public domain and a SSL certificate, uploaded in Hetzner Console then uncomment the 3 lines below.
+    # If you don't have a public domain and SSL certificate, then uncomment the 3 lines below.
     load-balancer.hetzner.cloud/protocol: "https"
     load-balancer.hetzner.cloud/http-redirect-http: "true"
     load-balancer.hetzner.cloud/http-certificates: "cloudprogramming.kainzmaier.de"
@@ -39,6 +39,6 @@ spec:
   ports:
     - name: https
       protocol: TCP
-      # If you don't have a public domain and a SSL certificate, use port 80 instead of port 443.
+      # If you don't have a public domain and SSL certificate, use port 80 instead of port 443.
       port: 443
       targetPort: 80

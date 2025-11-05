@@ -1,6 +1,6 @@
 # ☁️ IU Cloud Programming – K3s Cluster on Hetzner Cloud
 
-This project automatically deploys a complete K3s cluster (1 Master, N Workers) on Hetzner Cloud using **Terraform**.
+This project automatically provisions a complete K3s cluster (1 master node and multiple worker nodes) on Hetzner Cloud using ***Terraform***.
 
 ***
 
@@ -18,7 +18,7 @@ This project automatically deploys a complete K3s cluster (1 Master, N Workers) 
 
 ### Repository Clone and Setup
 ```bash
-git clone [https://github.com/kainze/iu-cloud-programming.git](https://github.com/kainze/iu-cloud-programming.git)
+git clone https://github.com/kainze/iu-cloud-programming.git
 cd iu-cloud-programming
 ```
 ### Create the secrets file
@@ -26,12 +26,12 @@ cd iu-cloud-programming
 cp terraform.tfvars.example terraform.tfvars
 ```
 ### 🔐 Edit Secrets (terraform.tfvars)
-- hcloud_token: -> Create Project at Hetzner and Get Api Token from -> Security -> Api Tokens (Must have Read & Write permissions.)
-- k3s_token: The shared token for the K3s cluster (Master & Workers). Recommended to generate a secure random string: openssl rand -hex 32
+- hcloud_token: Create a project in Hetzner Cloud → go to Security → API Tokens → create a new token (must have read & write permissions).
+- k3s_token: Shared token for K3s master and workers (e.g. openssl rand -hex 32).
 
-### 🔑 SSH Keys erstellen
+### 🔑 Generate SSH Keys
 
-Use this to generate the SSH key to log in to the servers via SSH.
+Use this command to create a new key pair for Hetzner Cloud access:
 
 ```bash
 ssh-keygen -t ed25519 -C "user@hostname.de" -f ~/.ssh/id_ed25519_hetzner
@@ -55,12 +55,11 @@ Copy the network ID from the output and save it for later.
 
 ### ✅ Check Kubernetes Cluster Status
 
-The cluster configuration is complete only after the worker nodes successfully join the master. Wait about 1 minute after terraform apply finishes for the agent services to start and join.
+Wait about one minute after terraform apply finishes for the K3s services to start and the worker nodes to join the master automatically.
 
-- SSH into the Master Node:
+- SSH into the Master Node - Replace <MASTER_PUBLIC_IP> with the public IP address of the Master Node you get that from the Cloud Console
 
 ```bash
-# Replace <MASTER_PUBLIC_IP> with the public IP address of the Master Node you get that from the Cloud Console
 ssh root@<MASTER_PUBLIC_IP>
 ```
 
@@ -75,7 +74,10 @@ The output must show all nodes with a Ready status:
 
 
 ## Create an example deployment
-### Nginx Ingress Controller 
+
+The deployment includes a sample NGINX Ingress Controller and a whoami web service to demonstrate load balancing and HTTPS termination.
+
+### Nginx Ingress Controller as a DaemonSet
 
 ```bash
 wget -q https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.13.0/deploy/static/provider/cloud/deploy.yaml -O /tmp/nginx.yaml
@@ -89,7 +91,10 @@ sed -i -e "s/strategy:/updateStrategy:/g" /tmp/nginx.yaml
 kubectl apply -f /tmp/nginx.yaml
 ```
 
-Replace <your_api_token> with your own Hetzner API token, and <network_id> with the network ID you got from the output terraform apply.
+These commands convert the default NGINX controller deployment into a DaemonSet and enable proxy protocol support required by the Hetzner Cloud Load Balancer.
+
+
+Replace <your_api_token> with your own Hetzner API token, and <network_id> with the network ID you got from the output at terraform apply.
 
 ```bash
 kubectl -n kube-system apply -f https://github.com/hetznercloud/hcloud-cloud-controller-manager/releases/download/v1.26.0/ccm-networks.yaml
@@ -107,12 +112,15 @@ kubectl describe node worker-node-0 | grep "ProviderID"
 
 The output should be hcloud://<id>
 
+### Create the Service
+
 Now copy/create the file whoami.yaml on the master node:
 ```bash
 nano whoami.yaml
 ```
 
-Next, apply the file, If you have a public domain and a SSL certificate, upload or create the SSL certificate in Hetzner Console and change some lines below in the whoami.yaml
+Next, apply the file.
+If you use a public domain with HTTPS, upload your SSL certificate in the Hetzner Cloud Console and adjust the related annotations in whoami.yaml accordingly.
 ```bash
 kubectl apply -f whoami.yaml
 ```
@@ -124,35 +132,22 @@ kubectl -n ingress-nginx get deployments
 kubectl -n ingress-nginx get svc
 ```
 
-### 🧹 Cleanup
+## 🧹 Cleanup
 
-To delete all resources created on Hetzner Cloud and stop incurring costs:
+Delete all resources created on Hetzner Cloud and stop incurring costs:
+
+### Stop the deployment and delete the Hetzner Cloud Load Balancer
 ```bash
 kubectl -n ingress-nginx delete deployment whoami
 kubectl -n ingress-nginx delete service whoami
 ```
 
-
+### Destroy your cluster
 ```bash
 terraform destroy
 ```
 
 HINT: If you rebuild the servers (terraform apply after a destroy), your local SSH client may reject the connection due to an outdated fingerprint. If this happens, remove the old fingerprint: 
 ```bash
-ssh-keygen -R <IP-AdressoftheServer>
+ssh-keygen -R <IPAdressoftheServer>
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-# Check the cloud-init logs for errors:
-cat /var/log/cloud-init.log 
-cat /var/log/cloud-init-output.log
